@@ -32,6 +32,7 @@ void medianFilter(int** image, int width, int height) {
 
     int window[WINDOW_SIZE * WINDOW_SIZE];
 
+    #pragma omp parallel for collapse(2) shared(image) private(window)
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             int k = 0;
