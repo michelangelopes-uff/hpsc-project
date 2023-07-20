@@ -1,3 +1,7 @@
 data/any_input
 data/any_output
+data/raw_output
+script.sh
+measures
 bin/
+debug.txt

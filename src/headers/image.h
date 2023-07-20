@@ -11,7 +11,6 @@ typedef struct {
 	float** pixels;
 }Image;
 
-void setImageDimensionsFromFile(Image* image, char* nfFilename);
 void getImagePixelsFromFile(Image* image, char* rawFilename);
 void printImageInfo(Image* image);
 void generateImageFromPixels(Image* image, char* filename);

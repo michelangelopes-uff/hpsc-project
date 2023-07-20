@@ -1,54 +1,87 @@
 #include "headers/filter.h"
 
-float euclideanDistance(int x1, int y1, int x2, int y2) {
-    return sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
-}
-
 float computeWeight(float distance, float sigma) {
+    // printf("exp(%f)\n", -distance / (sigma * sigma * 100));
     return exp(-distance / (sigma * sigma));
 }
 
-void nlmFilter(float** image, int width, int height, float sigma, int window_size) {
+int check_borders(int row, int column, int height, int width) {
+    if(row >= 0 && row < height && column >= 0 && column < width)
+        return 1;
+
+    return 0;
+}
+
+float** nlmFilter(float** image, int width, int height, float sigma, int window_size, int patch_size) {
     float** filteredImage = (float**)malloc(height * sizeof(float*));
     for (int i = 0; i < height; i++) {
         filteredImage[i] = (float*)malloc(width * sizeof(float));
     }
-
+    // printf("window = %d --- patch = %d\n", window_size, patch_size);
+    int aux;
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
+            // printf("[i] = %d --- [j] = %d\n", i, j);
             float sumWeights = 0.0;
             float sumValues = 0.0;
 
-            for (int m = -window_size; m <= window_size; m++) {
-                for (int n = -window_size; n <= window_size; n++) {
+            for (int m = -window_size/2; m <= window_size/2; m++) {
+                for (int n = -window_size/2; n <= window_size/2; n++) {
                     int x = i + m;
                     int y = j + n;
+                    if (check_borders(x, y, height, width) && x != i && y != j) {
+                        // printf("[m] = %d --- [n] = %d\n", m, n);
+                        // printf("[x] = %d --- [y] = %d\n", x, y);
+                        // printf("x and y are OK!\n");
+                        float distance = 0.0;
 
-                    if (x >= 0 && x < height && y >= 0 && y < width) {
-                        float distance = euclideanDistance(i, j, x, y);
+                        // squaredEuclideanDistance
+                        for (int k = 0; k < patch_size; k++) {
+                            for (int l = 0; l < patch_size; l++) {
+                                int new_i = i + k;
+                                int new_j = j + l;
+                                int new_x = x + k;
+                                int new_y = y + l;
+
+                                // printf("[new_i] = %d --- [new_j] = %d === %f\n", new_i, new_j, image[new_i][new_j]);
+                                // printf("[new_x] = %d --- [new_y] = %d === %f\n", new_x, new_y, image[new_x][new_y]);
+                                if(check_borders(new_i, new_j, height, width) && check_borders(new_x, new_y, height, width)){
+                                    float diff = image[new_i][new_j] - image[new_x][new_y];
+                                    distance += diff * diff;
+                                }
+                                else {
+                                    // printf("Out of border\n");
+                                }
+                                // printf("---\n");
+                            }
+                        }
+
+                        // distance = sqrt(distance);
+                        // printf("distance = %f\n", distance);
+                        // squaredEuclideanDistance(&image[i][j], &image[x][y], patch_size);
                         float weight = computeWeight(distance, sigma);
-                        sumWeights += weight;
-                        sumValues += weight * image[x][y];
+
+                        printf("weight = %.20f\n", weight);
+                        if(weight - 0.000001 > 0.0){
+                            sumWeights += weight;
+                            sumValues += weight * image[x][y];
+                            printf("sumWeights = %f\n", sumWeights);
+                            printf("sumValues = %f\n", sumValues);
+                            // printf("-------------------\n");
+                        }
                     }
                 }
             }
-
-            filteredImage[i][j] = sumValues / sumWeights;
+            if(sumValues == 0 || sumWeights == 0)
+                filteredImage[i][j] = image[i][j];
+            else {
+                filteredImage[i][j] = sumValues / sumWeights;
+                printf("original = %f --- filtered = %f\n", image[i][j], filteredImage[i][j]);
+            }
         }
     }
 
-    // Copy filtered image back to the original image
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            image[i][j] = filteredImage[i][j];
-        }
-    }
-
-    // Free memory
-    for (int i = 0; i < height; i++) {
-        free(filteredImage[i]);
-    }
-    free(filteredImage);
+    return filteredImage;
 }
 
 void swap(float* a, float* b) {
@@ -72,7 +105,7 @@ float median(float* arr, int size) {
     return arr[size / 2];
 }
 
-void medianFilter(float** image, int width, int height, int window_size) {
+float** medianFilter(float** image, int width, int height, int window_size) {
     float** filteredImage = (float**)malloc(height * sizeof(float*));
     for (int i = 0; i < height; i++) {
         filteredImage[i] = (float*)malloc(width * sizeof(float));
@@ -80,9 +113,10 @@ void medianFilter(float** image, int width, int height, int window_size) {
 
     float window[window_size * window_size];
 
-    // #pragma omp parallel for collapse(2) shared(image) private(window)
+    #pragma omp parallel for collapse(2) shared(image) private(window)
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
+            // printf("[i] = %d --- [j] = %d\n", i, j);
             int k = 0;
             for (int m = -window_size / 2; m <= window_size / 2; m++) {
                 for (int n = -window_size / 2; n <= window_size / 2; n++) {
@@ -90,26 +124,54 @@ void medianFilter(float** image, int width, int height, int window_size) {
                     int y = j + n;
 
                     if (x >= 0 && x < height && y >= 0 && y < width) {
-                        window[k++] = image[x][y];
+                        // printf("[x] = %d --- [y] = %d\n", x, y);
+                        // printf("x and y are OK!\n");
+                        window[k] = image[x][y];
+                        k++;
                     }
                 }
             }
-            // printf("TESTE1");
+
             filteredImage[i][j] = median(window, k);
-            // printf("TESTE2");
+            // printf("original = %f --- filtered = %f\n", image[i][j], filteredImage[i][j]);
         }
     }
 
-    // Copy filtered image back to the original image
+    return filteredImage;
+}
+
+float** meanFilter(float** image, int width, int height, int window_size) {
+    float** filteredImage = (float**)malloc(height * sizeof(float*));
+    for (int i = 0; i < height; i++) {
+        filteredImage[i] = (float*)malloc(width * sizeof(float));
+    }
+
+    float window[window_size * window_size];
+
+    #pragma omp parallel for collapse(2) shared(image) private(window)
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            image[i][j] = filteredImage[i][j];
+            // printf("[i] = %d --- [j] = %d\n", i, j);
+            int k = 0;
+            float sum = 0.0;
+            for (int m = -window_size / 2; m <= window_size / 2; m++) {
+                for (int n = -window_size / 2; n <= window_size / 2; n++) {
+                    int x = i + m;
+                    int y = j + n;
+
+                    if (x >= 0 && x < height && y >= 0 && y < width) {
+                        // printf("[x] = %d --- [y] = %d\n", x, y);
+                        // printf("x and y are OK!\n");
+                        sum += image[x][y];
+                        k++;
+                    }
+                }
+            }
+
+            filteredImage[i][j] = sum / k;
+            // printf("original = %f --- filtered = %f\n", image[i][j], filteredImage[i][j]);
         }
     }
 
-    // Free memory
-    for (int i = 0; i < height; i++) {
-        free(filteredImage[i]);
-    }
-    free(filteredImage);
+    return filteredImage;
 }

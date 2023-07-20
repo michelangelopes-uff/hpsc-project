@@ -1,24 +1,5 @@
 #include "headers/image.h"
 
-void setImageDimensionsFromFile(Image* image, char* nfFilename){
-	FILE * file = fopen(nfFilename, "r");
-	char str[1000];
-	int z;
-
-	if (!file) {
-		printf("O arquivo %s não foi encontrado.", nfFilename);
-		exit(0);
-	}
-
-	while (fscanf(file, "%s", str)!=EOF){
-		if (!strcmp(str,"\%image_dimensions")){
-			fscanf(file, "%i %i %i", &image->height, &image->width, &z);
-		}
-	}
-
-	fclose(file);
-}
-
 void getImagePixelsFromFile(Image* image, char* rawFilename){
 	FILE * file = fopen(rawFilename,"rb");
 	unsigned char pixel_color;
