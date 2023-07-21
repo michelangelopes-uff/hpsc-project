@@ -2,7 +2,7 @@ compile:
 	@echo "compiling..."
 	@g++ src/main.c src/filter.c src/image.c -o bin/main -lm
 	@g++ src/main.c src/filter.c src/image.c -o bin/main_omp -fopenmp -lm
-	@g++ main.cpp -o bin/main_opencl -lOpenCL
+	@g++ src/main_opencl.cpp src/image.c -o bin/main_opencl -lOpenCL
 
 prepare_run_script:
 	@echo "preparing..."

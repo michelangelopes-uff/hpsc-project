@@ -5,16 +5,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct {
-	int height; //x
-	int width; //y
-	float** pixels;
-}Image;
-
-void getImagePixelsFromFile(Image* image, char* rawFilename);
-void printImageInfo(Image* image);
-void generateImageFromPixels(Image* image, char* filename);
-void allocImagePixels(Image* image);
-void freeImagePixels(Image* image);
+void getImagePixelsFromRawFile(float** pixels, char* rawFilename, int width, int height);
+void getImagePixelsFromRawFile_flat(float* pixels, char* rawFilename, int width, int height);
+void setRawFileFromImagePixels(float** pixels, char* rawFilename, int width, int height);
+void setRawFileFromImagePixels_flat(float* pixels, char* rawFilename, int width, int height);
+void printImageInfo(float** pixels, int width, int height);
+float** allocImagePixels(int width, int height);
+void freeImagePixels(float** pixels, int width, int height);
 
 #endif

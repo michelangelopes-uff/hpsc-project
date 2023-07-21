@@ -1,17 +1,14 @@
 #include "headers/image.h"
 
-void getImagePixelsFromFile(Image* image, char* rawFilename){
+void getImagePixelsFromRawFile(float** pixels, char* rawFilename, int width, int height) {
 	FILE * file = fopen(rawFilename,"rb");
 	unsigned char pixel_color;
 
 	if (file) {
-		allocImagePixels(image);
-
-		for (int i = 0; i < image->height; i++){
-			for (int j = 0; j< image->width; j++){
+		for (int i = 0; i < height; i++){
+			for (int j = 0; j< width; j++){
 				if (fread(&pixel_color, sizeof(unsigned char), 1, file)!=EOF){
-					// printf("%d %d %d\n", i, j, pixel_color);
-					image->pixels[i][j] = (float) pixel_color;
+					pixels[i][j] = (float) pixel_color;
 				} 
 				else {
 					// If reached EOF before expected, return false
@@ -24,12 +21,34 @@ void getImagePixelsFromFile(Image* image, char* rawFilename){
 	}
 }
 
-void generateImageFromPixels(Image* image, char* filename) {
-	FILE* file = fopen(filename, "wb");
+void getImagePixelsFromRawFile_flat(float* pixels, char* rawFilename, int width, int height) {
+	FILE * file = fopen(rawFilename,"rb");
+	unsigned char pixel_color;
 
-	for(int i = 0; i < image->height; i++){
-		for(int j = 0; j < image->width; j++){
-			unsigned char buffer = (unsigned char) (int) image->pixels[i][j];
+	if (file) {
+		for (int i = 0; i < height; i++){
+			for (int j = 0; j< width; j++){
+				if (fread(&pixel_color, sizeof(unsigned char), 1, file)!=EOF){
+					int index = (i * width) + j;
+					pixels[index] = (float) pixel_color;
+				} 
+				else {
+					// If reached EOF before expected, return false
+					fclose(file);
+				}
+			}
+		}
+
+        fclose(file);
+	}
+}
+
+void setRawFileFromImagePixels(float** pixels, char* rawFilename, int width, int height) {
+	FILE* file = fopen(rawFilename, "wb");
+
+	for(int i = 0; i < height; i++){
+		for(int j = 0; j < width; j++){
+			unsigned char buffer = (unsigned char) (int) pixels[i][j];
 			fwrite(&buffer, sizeof(char), 1, file);
 		}
 	}
@@ -37,32 +56,48 @@ void generateImageFromPixels(Image* image, char* filename) {
 	fclose(file);
 }
 
-void printImageInfo(Image* image) {
-	printf("Dimensões: (x, y) = (%d, %d)\n\n", image->height, image->width);
+void setRawFileFromImagePixels_flat(float* pixels, char* rawFilename, int width, int height) {
+	FILE* file = fopen(rawFilename, "wb");
+
+	for(int i = 0; i < height; i++){
+		for(int j = 0; j < width; j++){
+			int index = (i * width) + j;
+			unsigned char buffer = (unsigned char) (int) pixels[index];
+			fwrite(&buffer, sizeof(char), 1, file);
+		}
+	}
+
+	fclose(file);
+}
+
+void printImageInfo(float** pixels, int width, int height) {
+	printf("Dimensões: (x, y) = (%d, %d)\n\n", height, width);
 
 	printf("Matriz:\n");
 
-	for(int i = 0; i < image->height; i++){
-		for(int j = 0; j < image->width; j++){
-			printf("%f\t", image->pixels[i][j]);
+	for(int i = 0; i < height; i++){
+		for(int j = 0; j < width; j++){
+			printf("%f\t", pixels[i][j]);
 		}
 
 		printf("\n");
 	}
 }
 
-void allocImagePixels(Image* image) {
-	image->pixels = (float**) malloc(image->height * sizeof(float*));
+float** allocImagePixels(int width, int height) {
+	float** pixels = (float**) malloc(height * sizeof(float*));
 
-	for(int i = 0; i < image->height; i++) {
-		image->pixels[i] = (float*) malloc(image->width * sizeof(float));
+	for(int i = 0; i < height; i++) {
+		pixels[i] = (float*) malloc(width * sizeof(float));
 	}
+
+	return pixels;
 }
 
-void freeImagePixels(Image* image) {
-	for(int i = 0; i < image->height; i++) {
-		free(image->pixels[i]);
+void freeImagePixels(float** pixels, int width, int height) {
+	for(int i = 0; i < height; i++) {
+		free(pixels[i]);
 	}
 
-	free(image->pixels);
+	free(pixels);
 }
