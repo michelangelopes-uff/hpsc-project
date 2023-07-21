@@ -152,7 +152,7 @@ float** meanFilter(float** image, int width, int height, int window_size) {
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             // printf("[i] = %d --- [j] = %d\n", i, j);
-            int k = 0;
+            // int k = 0;
             float sum = 0.0;
             for (int m = -window_size / 2; m <= window_size / 2; m++) {
                 for (int n = -window_size / 2; n <= window_size / 2; n++) {
@@ -163,12 +163,12 @@ float** meanFilter(float** image, int width, int height, int window_size) {
                         // printf("[x] = %d --- [y] = %d\n", x, y);
                         // printf("x and y are OK!\n");
                         sum += image[x][y];
-                        k++;
+                        // k++;
                     }
                 }
             }
 
-            filteredImage[i][j] = sum / k;
+            filteredImage[i][j] = sum / (window_size * window_size);
             // printf("original = %f --- filtered = %f\n", image[i][j], filteredImage[i][j]);
         }
     }

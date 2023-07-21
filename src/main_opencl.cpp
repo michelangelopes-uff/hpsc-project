@@ -13,12 +13,13 @@
 #define MAX_SOURCE_SIZE (0x100000)
  
 int main(int argc, char** argv) {
-	printf("started running\n");
 
-    #pragma region Loading vectors
-
+    #pragma region Loading variables
+	
+    printf("started running\n");
     int height = atoi(argv[4]);
     int width = atoi(argv[3]);
+    int window_size = 5;
     size_t vector_size = sizeof(float) * width * height;
     float* inputPixels = (float*) malloc(vector_size);
 
@@ -35,7 +36,8 @@ int main(int argc, char** argv) {
     char *source_str;
     size_t source_size;
  
-    fp = fopen("kernels/vector_add_kernel.cl", "r");
+    // fp = fopen("kernels/vector_add_kernel.cl", "r");
+    fp = fopen("kernels/mean_filter.cl", "r");
     if (!fp) {
         fprintf(stderr, "Failed to load kernel.\n");
         exit(1);
@@ -112,7 +114,7 @@ int main(int argc, char** argv) {
     #pragma region Creating kernel
 	printf("after building\n");
     // Create the OpenCL kernel
-    cl_kernel kernel = clCreateKernel(program, "vector_add", &ret);
+    cl_kernel kernel = clCreateKernel(program, "mean_filter", &ret);
 	printf("ret at %d is %d\n", __LINE__, ret);
 
     #pragma endregion
@@ -125,6 +127,15 @@ int main(int argc, char** argv) {
     ret = clSetKernelArg(kernel, 1, sizeof(cl_mem), (void *)&b_mem_obj);
 	printf("ret at %d is %d\n", __LINE__, ret);
 
+    ret = clSetKernelArg(kernel, 2, sizeof(cl_int), (void *)&width);
+	printf("ret at %d is %d\n", __LINE__, ret);
+
+    ret = clSetKernelArg(kernel, 3, sizeof(cl_int), (void *)&height);
+	printf("ret at %d is %d\n", __LINE__, ret);
+
+    ret = clSetKernelArg(kernel, 4, sizeof(cl_int), (void *)&window_size);
+	printf("ret at %d is %d\n", __LINE__, ret);
+
 	//added this to fix garbage output problem
 	//ret = clSetKernelArg(kernel, 3, sizeof(int), &LIST_SIZE);
 
@@ -133,11 +144,31 @@ int main(int argc, char** argv) {
     #pragma region Executing kernel
 	printf("before execution\n");
     // Execute the OpenCL kernel on the list
+    cl_event kernel_event;
     size_t global_item_size = width * height; // Process the entire lists
     size_t local_item_size = 64; // Divide work items into groups of 64
-    ret = clEnqueueNDRangeKernel(command_queue, kernel, 1, NULL, 
-            &global_item_size, &local_item_size, 0, NULL, NULL);
+    ret = clEnqueueNDRangeKernel(command_queue, kernel, 2, NULL, 
+            &global_item_size, &local_item_size, 0, NULL, &kernel_event);
 
+    ret = clWaitForEvents(1, &kernel_event);
+
+    #pragma endregion
+
+    #pragma region Timing event
+
+    unsigned long start = 0;
+    unsigned long end = 0;
+
+    clGetEventProfilingInfo(kernel_event, CL_PROFILING_COMMAND_START, 
+        sizeof(cl_ulong), &start, NULL);
+
+    clGetEventProfilingInfo(kernel_event, CL_PROFILING_COMMAND_END, 
+        sizeof(cl_ulong), &end, NULL);
+
+    float duration = (end - start) * 10e-9;
+
+    printf("Kernel execution time: %f\n", duration);
+    
     #pragma endregion
 
     #pragma region Getting output
@@ -161,6 +192,7 @@ int main(int argc, char** argv) {
     // Clean up
     ret = clFlush(command_queue);
     ret = clFinish(command_queue);
+    ret = clReleaseEvent(kernel_event);
     ret = clReleaseKernel(kernel);
     ret = clReleaseProgram(program);
     ret = clReleaseMemObject(a_mem_obj);
