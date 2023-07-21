@@ -74,7 +74,16 @@ int main(int argc, char** argv)
 
     getImagePixelsFromRawFile(inputPixels, argv[1], width, height);
 
-    run_mean_filter(inputPixels, outputPixels, argv[2], width, height);
+    int window_size = atoi(argv[5]);
+
+    char newImageFilename[100] = "";
+    sprintf(newImageFilename, "%s_mean%d.raw", argv[2], window_size);
+    printf("%s\n", newImageFilename);
+    outputPixels = meanFilter(inputPixels, width, height, window_size);
+    setRawFileFromImagePixels(outputPixels, newImageFilename, width, height);
+    freeImagePixels(outputPixels, width, height);
+
+    // run_mean_filter(inputPixels, outputPixels, argv[2], width, height);
     // run_median_filter(inputPixels, outputPixels, argv[2], width, height);
     // run_nlm_filter(inputPixels, outputPixels, argv[2], width, height);
 

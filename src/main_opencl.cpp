@@ -145,10 +145,10 @@ int main(int argc, char** argv) {
 	printf("before execution\n");
     // Execute the OpenCL kernel on the list
     cl_event kernel_event;
-    size_t global_item_size = width * height; // Process the entire lists
-    size_t local_item_size = 64; // Divide work items into groups of 64
+    size_t local_item_size[2] = {(size_t)128, (size_t)128}; // Divide work items into groups of 64
+    size_t global_item_size[2] = {(size_t)8, (size_t)8}; // Process the entire lists
     ret = clEnqueueNDRangeKernel(command_queue, kernel, 2, NULL, 
-            &global_item_size, &local_item_size, 0, NULL, &kernel_event);
+            global_item_size, local_item_size, 0, NULL, &kernel_event);
 
     ret = clWaitForEvents(1, &kernel_event);
 
@@ -180,11 +180,15 @@ int main(int argc, char** argv) {
 
     #pragma endregion
 
-    #pragma region Displaying/saving result
-//  printf("after copying\n");
-//     // Display the result to the screen
-//     for(i = 0; i < LIST_SIZE; i++)
-//         printf("%d + %d = %d\n", A[i], B[i], C[i]);
+    #pragma region Saving result
+    printf("after copying\n");
+    // Display the result to the screen
+    // for(int i = 0; i < width * height; i++)
+    //     printf("%f\n", outputPixels[i]);
+
+    char newImageFilename[100] = "";
+    sprintf(newImageFilename, "%s_mean_opencl%d.raw", argv[2], window_size);
+    setRawFileFromImagePixels_flat(outputPixels, newImageFilename, width, height);
 
     #pragma endregion
 
