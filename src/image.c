@@ -1,6 +1,6 @@
 #include "headers/image.h"
 
-void getImagePixelsFromRawFile(float** pixels, char* rawFilename, int width, int height) {
+void getImagePixelsFromRawFile(float** pixels, const char* rawFilename, int width, int height) {
 	FILE * file = fopen(rawFilename,"rb");
 	unsigned char pixel_color;
 
@@ -21,7 +21,7 @@ void getImagePixelsFromRawFile(float** pixels, char* rawFilename, int width, int
 	}
 }
 
-void getImagePixelsFromRawFile_flat(float* pixels, char* rawFilename, int width, int height) {
+void getImagePixelsFromRawFile_flat(float* pixels, const char* rawFilename, int width, int height) {
 	FILE * file = fopen(rawFilename,"rb");
 	unsigned char pixel_color;
 
@@ -33,8 +33,8 @@ void getImagePixelsFromRawFile_flat(float* pixels, char* rawFilename, int width,
 					pixels[index] = (float) pixel_color;
 				} 
 				else {
-					// If reached EOF before expected, return false
 					fclose(file);
+					exit(0);
 				}
 			}
 		}
@@ -43,12 +43,13 @@ void getImagePixelsFromRawFile_flat(float* pixels, char* rawFilename, int width,
 	}
 }
 
-void setRawFileFromImagePixels(float** pixels, char* rawFilename, int width, int height) {
+void setRawFileFromImagePixels(float** pixels, const char* rawFilename, int width, int height) {
 	FILE* file = fopen(rawFilename, "wb");
 
 	for(int i = 0; i < height; i++){
 		for(int j = 0; j < width; j++){
 			unsigned char buffer = (unsigned char) (int) pixels[i][j];
+			// printf("[%d][%d] = %f -> %hhu\n", i, j, pixels[i][j], buffer);
 			fwrite(&buffer, sizeof(char), 1, file);
 		}
 	}
@@ -56,13 +57,14 @@ void setRawFileFromImagePixels(float** pixels, char* rawFilename, int width, int
 	fclose(file);
 }
 
-void setRawFileFromImagePixels_flat(float* pixels, char* rawFilename, int width, int height) {
+void setRawFileFromImagePixels_flat(float* pixels, const char* rawFilename, int width, int height) {
 	FILE* file = fopen(rawFilename, "wb");
 
 	for(int i = 0; i < height; i++){
 		for(int j = 0; j < width; j++){
 			int index = (i * width) + j;
 			unsigned char buffer = (unsigned char) (int) pixels[index];
+			// printf("[%d][%d] = %f -> %hhu\n", i, j, pixels[index], buffer);
 			fwrite(&buffer, sizeof(char), 1, file);
 		}
 	}
@@ -77,10 +79,9 @@ void printImageInfo(float** pixels, int width, int height) {
 
 	for(int i = 0; i < height; i++){
 		for(int j = 0; j < width; j++){
-			printf("%f\t", pixels[i][j]);
+			// printf("%f\t", pixels[i][j]);
+			printf("[%d][%d] = %f\n", i, j, pixels[i][j]);
 		}
-
-		printf("\n");
 	}
 }
 

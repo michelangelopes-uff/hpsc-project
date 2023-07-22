@@ -1,7 +1,9 @@
 compile:
 	@echo "compiling..."
 	@g++ src/main.c src/filter.c src/image.c -o bin/main -lm
+	@g++ src/main.c src/filter.c src/image.c -o bin/main_o3 -lm
 	@g++ src/main.c src/filter.c src/image.c -o bin/main_omp -fopenmp -lm
+	@g++ src/main.c src/filter.c src/image.c -o bin/main_omp_o3 -fopenmp -lm -O3
 	@g++ src/main_opencl.cpp src/image.c -o bin/main_opencl -lOpenCL
 
 prepare_run_script:
@@ -10,15 +12,22 @@ prepare_run_script:
 
 run:
 	@echo "running..."
-	@python3 script.py sequential > script.sh
-	@bash script.sh >> measures/time.txt 2>&1
+	@./bin/main
+
+run_o3:
+	@echo "running..."
+	@./bin/main_o3
 
 run_omp:
 	@echo "running..."
-	@python3 script.py omp > script_omp.sh
-	@bash script_omp.sh >> measures/time_omp.txt 2>&1
+	@./bin/main_omp
+
+run_omp_o3:
+	@echo "running..."
+	@./bin/main_omp_o3
 
 run_opencl:
+	@echo "running..."
 	@./bin/main_opencl
 
 convert_raw:
